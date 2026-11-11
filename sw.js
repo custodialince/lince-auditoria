@@ -1,4 +1,4 @@
-const CACHE='lince-shell-r3';
+const CACHE='lince-shell-logo4';
 self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(c=>c.addAll(['./','./manifest.webmanifest','./icon-192.png','./icon-512.png'])));});
 self.addEventListener('activate',event=>{event.waitUntil(self.clients.claim());});
 self.addEventListener('fetch',event=>{
