@@ -657,7 +657,13 @@ function construirHtmlPlanillaOficial(a) {
 </header>
 <!-- CONTENIDO PRINCIPAL -->
 <main class="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 py-5">
-<div class="no-print" id="lince-compact-status"><p aria-live="polite" id="lince-draft-status" role="status">El borrador se guarda mientras completás una hoja.</p><button class="bg-slate-900 text-white rounded-lg px-3 py-2" hidden="" id="lince-exit-history" onclick="salirVistaHistoricaLince()" type="button">Salir de vista histórica</button></div>
+<section id="lince-zone-bar" class="no-print" style="background:#fff;border:1px solid #cbd5e1;border-radius:12px;padding:14px;margin:12px 0;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+<label for="lince-zone-select" style="font-weight:700">Recorrer por zona</label><select id="lince-zone-select" style="padding:9px;border:1px solid #64748b;border-radius:8px;max-width:100%"></select>
+<button type="button" onclick="agregarZonaLince()" style="padding:9px;background:#0f172a;color:white;border-radius:8px">Agregar zona al recorrido</button>
+<button type="button" onclick="verZonaMapaLince()" style="padding:9px;background:#d99b13;color:#0f172a;border-radius:8px">Ver zona en mapa</button>
+<span id="lince-zone-count" role="status" aria-live="polite" style="font-size:12px"></span>
+<details style="width:100%;font-size:12px"><summary style="cursor:pointer">Asignar zonas a servicios existentes</summary><p>Los servicios actuales quedan en Sin zona hasta que los clasifiques. No se adivina el barrio por la dirección.</p><div id="lince-zone-manager" style="max-height:300px;overflow:auto"></div></details>
+</section><div class="no-print" id="lince-compact-status"><p aria-live="polite" id="lince-draft-status" role="status">El borrador se guarda mientras completás una hoja.</p><button class="bg-slate-900 text-white rounded-lg px-3 py-2" hidden="" id="lince-exit-history" onclick="salirVistaHistoricaLince()" type="button">Salir de vista histórica</button></div>
 <!-- ===================================================================== -->
 <!-- SOLAPA 1: SERVICIOS Y ARMADO DE RUTA DEL AUDITOR                      -->
 <!-- ===================================================================== -->
@@ -683,7 +689,7 @@ function construirHtmlPlanillaOficial(a) {
                 Cancelar edición
               </button>
 </div>
-<form class="space-y-4" id="service-form" onsubmit="handleSaveService(event)">
+<form class="space-y-4" id="service-form" onsubmit="handleSaveService(event)"><div><label for="srv-zona" class="text-xs font-bold">ZONA / BARRIO</label><input id="srv-zona" list="lince-zonas-list" maxlength="80" placeholder="Ej.: Parque Patricios" class="w-full border rounded-lg p-2"><datalist id="lince-zonas-list"></datalist><p class="text-xs text-slate-500">Podés crear una zona operativa propia. Sin completar queda en Sin zona.</p></div>
 <input id="srv-id" type="hidden">
 <div class="grid grid-cols-1 sm:grid-cols-12 gap-3">
 <div class="sm:col-span-4">
@@ -2416,7 +2422,7 @@ function construirHtmlPlanillaOficial(a) {
       const query = (document.getElementById("search-service-input").value || "").toLowerCase().trim();
       document.getElementById("total-services-count").textContent = services.length;
 
-      const filtered = services.filter(s =>
+      const filtered = services.filter(s => coincideZonaLince(s)).filter(s =>
         s.code.toLowerCase().includes(query) ||
         s.name.toLowerCase().includes(query) ||
         s.address.toLowerCase().includes(query) ||
@@ -2561,6 +2567,7 @@ function construirHtmlPlanillaOficial(a) {
       const lat = parseFloat(document.getElementById("srv-lat").value);
       const lng = parseFloat(document.getElementById("srv-lng").value);
       const notes = document.getElementById("srv-notes").value.trim();
+      const zona = normalizarZonaLince(document.getElementById("srv-zona").value);
 
       if (isNaN(lat) || isNaN(lng)) {
         showToast("Ingresá coordenadas válidas o usá el botón Ubicar.", "warning");
@@ -2570,12 +2577,12 @@ function construirHtmlPlanillaOficial(a) {
       if (idInput) {
         const idx = services.findIndex(s => s.id === idInput);
         if (idx !== -1) {
-          services[idx] = { ...services[idx], code, name, address, coord, lat, lng, notes };
+          services[idx] = { ...services[idx], code, name, address, coord, lat, lng, notes, zona };
           showToast(`Servicio #${code} (${name}) actualizado.`);
         }
       } else {
         const newId = "srv-" + Date.now();
-        services.push({ id: newId, code, name, address, coord, lat, lng, notes });
+        services.push({ id: newId, code, name, address, coord, lat, lng, notes, zona });
         shiftRoute.push(newId); // Lo sumamos a la ruta actual automáticamente para comodidad
         showToast(`Servicio #${code} agregado al padrón y a la ruta del turno.`);
       }
@@ -2598,6 +2605,7 @@ function construirHtmlPlanillaOficial(a) {
       document.getElementById("srv-lat").value = srv.lat;
       document.getElementById("srv-lng").value = srv.lng;
       document.getElementById("srv-notes").value = srv.notes || "";
+      document.getElementById("srv-zona").value = zonaServicioLince(srv) === "Sin zona" ? "" : zonaServicioLince(srv);
 
       document.getElementById("service-form-title").textContent = `Editando Servicio #${srv.code}`;
       document.getElementById("btn-save-service-text").textContent = "Guardar Cambios";
@@ -2698,12 +2706,7 @@ function construirHtmlPlanillaOficial(a) {
     }
 
     function addAllServicesToRoute() {
-      shiftRoute = services.map(s => s.id);
-      saveAppState();
-      renderServicesList();
-      renderShiftRouteList();
-      if (map) renderMapMarkers();
-      showToast("Todos los servicios fueron agregados al turno.");
+      agregarZonaLince();
     }
 
     function clearShiftRoute() {
@@ -2779,7 +2782,7 @@ function construirHtmlPlanillaOficial(a) {
 
       auditorMarker = L.marker([auditorPosition.lat, auditorPosition.lng], {
         icon: auditorIcon,
-        draggable: true,
+        draggable: false,
         zIndexOffset: 900
       }).addTo(markersLayer);
 
@@ -2795,7 +2798,7 @@ function construirHtmlPlanillaOficial(a) {
       });
 
       // 2. Marcadores de todos los Servicios con su #Código visible
-      services.forEach(srv => {
+      services.filter(coincideZonaLince).forEach(srv => {
         const routeIdx = shiftRoute.indexOf(srv.id);
         const isInRoute = routeIdx !== -1;
         const audited = isServiceAuditedToday(srv.id);
@@ -2842,7 +2845,7 @@ function construirHtmlPlanillaOficial(a) {
     function renderDrawerQuickChips() {
       const chipBox = document.getElementById("drawer-quick-chips");
       if (!chipBox) return;
-      chipBox.innerHTML = services.map(s => `
+      chipBox.innerHTML = services.filter(coincideZonaLince).map(s => `
         <button onclick="openServiceDrawer('${s.id}')" class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-amber-500 hover:text-slate-950 text-slate-800 font-mono font-bold text-xs transition border border-slate-200">
           #${s.code}
         </button>
@@ -4504,5 +4507,40 @@ window.addEventListener('DOMContentLoaded',()=>{
  if(typeof oldEdit==='function'){editService=function(){document.getElementById('lince-manage-services').open=true;return oldEdit.apply(this,arguments);};}
  actualizarBarraEstadoSesionUI();
 });
-</script></body>
+</script><script>
+var zonaElegidaLince = '';
+function normalizarZonaLince(value){return String(value || '').normalize('NFC').trim().replace(/\s+/g,' ').slice(0,80);}
+function claveZonaLince(value){return normalizarZonaLince(value).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('es');}
+function zonaServicioLince(srv){return normalizarZonaLince(srv.zona) || 'Sin zona';}
+function coincideZonaLince(srv){return !zonaElegidaLince || claveZonaLince(zonaServicioLince(srv))===claveZonaLince(zonaElegidaLince);}
+function zonasDisponiblesLince(){const zonas=new Map();services.forEach(s=>{const z=zonaServicioLince(s);if(!zonas.has(claveZonaLince(z)))zonas.set(claveZonaLince(z),z);});return [...zonas.values()].sort((a,b)=>a.localeCompare(b,'es'));}
+function refrescarZonasLince(){
+ const select=document.getElementById('lince-zone-select');if(!select)return;
+ const zonas=zonasDisponiblesLince();if(zonaElegidaLince && !zonas.some(z=>claveZonaLince(z)===claveZonaLince(zonaElegidaLince)))zonaElegidaLince='';
+ select.replaceChildren();const all=document.createElement('option');all.value='';all.textContent='Todas las zonas';select.appendChild(all);
+ const dl=document.getElementById('lince-zonas-list');dl.replaceChildren();
+ zonas.forEach(z=>{const o=document.createElement('option');o.value=z;o.textContent=z+' ('+services.filter(s=>claveZonaLince(zonaServicioLince(s))===claveZonaLince(z)).length+')';select.appendChild(o);if(z!=='Sin zona'){const d=document.createElement('option');d.value=z;dl.appendChild(d);}});select.value=zonaElegidaLince;
+ const visible=services.filter(coincideZonaLince);const routeOutside=shiftRoute.filter(id=>{const s=services.find(x=>x.id===id);return s&&!coincideZonaLince(s);}).length;
+ document.getElementById('lince-zone-count').textContent=visible.length+' objetivos visibles'+(routeOutside?' · '+routeOutside+' de otras zonas siguen en tu recorrido':'');
+ const manager=document.getElementById('lince-zone-manager');manager.replaceChildren();
+ services.forEach(srv=>{const row=document.createElement('div');row.style.cssText='display:flex;flex-wrap:wrap;gap:8px;padding:8px 0;border-bottom:1px solid #e2e8f0';const label=document.createElement('label');const id='zone-edit-'+srv.id;label.htmlFor=id;label.textContent='#'+srv.code+' · '+srv.name;label.style.flex='1 1 180px';const input=document.createElement('input');input.id=id;input.value=normalizarZonaLince(srv.zona);input.placeholder='Sin zona';input.maxLength=80;input.setAttribute('list','lince-zonas-list');input.style.cssText='padding:6px;border:1px solid #94a3b8;border-radius:6px;max-width:100%';const btn=document.createElement('button');btn.type='button';btn.textContent='Guardar zona';btn.style.cssText='padding:6px;border:1px solid #94a3b8;border-radius:6px';btn.addEventListener('click',()=>{const old=srv.zona;srv.zona=normalizarZonaLince(input.value);if(!saveAppState()){if(old===undefined)delete srv.zona;else srv.zona=old;return;}renderServicesList();if(map)renderMapMarkers();showToast('Zona guardada.','success');});row.append(label,input,btn);manager.appendChild(row);});
+}
+function aplicarFiltroZonaLince(){
+ zonaElegidaLince=document.getElementById('lince-zone-select').value;
+ renderServicesList();
+ if(map){renderMapMarkers();if(selectedServiceIdOnMap&&!services.some(s=>s.id===selectedServiceIdOnMap&&coincideZonaLince(s))){if(typeof closeServiceDrawer==='function')closeServiceDrawer();selectedServiceIdOnMap=null;}ajustarMapaZonaLince();}
+}
+function coordenadasValidasZonaLince(s){return s.lat!==null&&s.lng!==null&&String(s.lat).trim()!==''&&String(s.lng).trim()!==''&&Number.isFinite(Number(s.lat))&&Number.isFinite(Number(s.lng))&&Math.abs(Number(s.lat))<=90&&Math.abs(Number(s.lng))<=180;}
+function ajustarMapaZonaLince(){if(!map)return;const puntos=services.filter(coincideZonaLince).filter(coordenadasValidasZonaLince).map(s=>[Number(s.lat),Number(s.lng)]);if(puntos.length)map.fitBounds(puntos,{padding:[35,35],maxZoom:15});}
+function verZonaMapaLince(){switchTab('mapa');setTimeout(()=>{if(map){map.invalidateSize();renderMapMarkers();ajustarMapaZonaLince();}},180);}
+function agregarZonaLince(){
+ const visibles=services.filter(coincideZonaLince);if(!visibles.length){showToast('No hay objetivos en esta zona.','warning');return;}
+ const old=[...shiftRoute];const ids=new Set(shiftRoute);visibles.forEach(s=>ids.add(s.id));shiftRoute=[...ids];if(!saveAppState()){shiftRoute=old;return;}
+ renderServicesList();renderShiftRouteList();if(map)renderMapMarkers();showToast((shiftRoute.length-old.length)+' objetivos agregados sin borrar los anteriores.','success');
+}
+const renderServicesAntesZonasLince=renderServicesList;
+renderServicesList=function(){renderServicesAntesZonasLince();refrescarZonasLince();};
+window.addEventListener('DOMContentLoaded',()=>{refrescarZonasLince();document.getElementById('lince-zone-select').addEventListener('change',aplicarFiltroZonaLince);});
+</script>
+</body>
 </html>
