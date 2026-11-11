@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#020617" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -26,6 +26,8 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <style>
+    button:disabled {opacity:.55; cursor:not-allowed;}
+    @media(max-width:640px) {input,select,textarea {font-size:16px !important;} #official-paper-sheet {padding:8px;} header {position:static !important;} #lince-map {height:420px;} }
     body {
       font-family: 'Inter', sans-serif;
       background-color: #f1f5f9;
@@ -206,7 +208,7 @@
           </div>
           <div>
             <h3 class="text-base font-extrabold text-white">Iniciar Sesión de Auditor en Calle</h3>
-            <p class="text-xs text-amber-400">Activa GPS Continuo (WakeLock + Segundo Plano 12s)</p>
+            <p class="text-xs text-amber-400">GPS mientras la aplicación esté activa</p>
           </div>
         </div>
         <button onclick="closeLoginModal()" class="text-slate-400 hover:text-white px-2 py-1">
@@ -272,7 +274,7 @@
             ¿Cómo funciona la arquitectura GitHub (App) + Google Drive (Servidor)?
           </p>
           <ol class="list-decimal pl-4 space-y-1 text-[11px] text-slate-700 leading-relaxed">
-            <li><b>GitHub Pages (Frontend Gratis y Seguro HTTPS):</b> Subís este archivo como <code>index.html</code> a un repositorio de GitHub y activás <i>GitHub Pages</i>. Al tener HTTPS real, en los celulares el <b>GPS satelital funciona con ±5m de precisión</b> y permite <b>"Instalar aplicación"</b> en la pantalla de inicio.</li>
+            <li><b>GitHub Pages (Frontend Gratis y Seguro HTTPS):</b> Subís este archivo como <code>index.html</code> a un repositorio de GitHub y activás <i>GitHub Pages</i>. Al tener HTTPS real, en los celulares el <b>acceso a ubicación depende del dispositivo y los permisos</b> y permite <b>"Instalar aplicación"</b> en la pantalla de inicio.</li>
             <li><b>Google Drive + Sheets (Base de Datos y Archivo Legal):</b> Cada vez que un auditor toca <i>"Finalizar y Guardar Auditoría"</i>, el script de abajo crea en tu Google Drive la carpeta <code>LINCE_AUDITORIAS_PLANILLAS</code>, guarda adentro el documento HTML/PDF con las firmas digitales y agrega la fila en una planilla general de Google Sheets.</li>
           </ol>
         </div>
@@ -457,7 +459,7 @@ function construirHtmlPlanillaOficial(a) {
          "<p style='background:#eee;padding:6px;border:1px solid #000;'>" +
          "<b>GPS INICIO (Apertura Hoja):</b> " + (a.gpsInicio ? a.gpsInicio.lat + "," + a.gpsInicio.lng + " (" + a.gpsInicio.hora + ")" : "S/D") + "<br>" +
          "<b>GPS FIN (Cierre Hoja):</b> " + (a.gpsFin ? a.gpsFin.lat + "," + a.gpsFin.lng + " (" + a.gpsFin.hora + ")" : "S/D") + "<br>" +
-         "<b>DISTANCIA AL OBJETIVO:</b> " + (a.distanciaObjetivoMetros != null ? a.distanciaObjetivoMetros + " metros" : "S/D") + " | <b>PERMANENCIA:</b> " + (a.duracionMinutos || 1) + " min</p>" +
+         "<b>DISTANCIA AL OBJETIVO:</b> " + (a.distanciaObjetivoMetros != null ? a.distanciaObjetivoMetros + " metros" : "S/D") + " | <b>TIEMPO DE HOJA:</b> " + (a.duracionMinutos || 1) + " min</p>" +
          "<table style='width:100%;border-collapse:collapse;font-size:12px;'><thead><tr style='background:#000;color:#fff;'>" +
          "<th>ITEM</th><th>B</th><th>R</th><th>M</th><th>OBS</th></tr></thead><tbody>" + filas + "</tbody></table>" +
          "<p><b>ACLARACIONES:</b> " + (a.aclaraciones || "SIN ACLARACIONES") + "</p>" +
@@ -521,8 +523,8 @@ function construirHtmlPlanillaOficial(a) {
             ¿Por qué en una PC o dentro del visor puede marcar lejos de donde estás?
           </p>
           <ul class="list-disc pl-4 space-y-1 text-[11px] leading-relaxed">
-            <li><b>En una PC de escritorio (Windows):</b> Las PCs no tienen chip GPS satelital físico. El navegador calcula la posición usando la <b>central IP de tu proveedor de internet</b> (que suele estar en Capital Federal o a varios kilómetros de Lanús Oeste / Zona Sur, dando un error de 1.000m a 8.000m).</li>
-            <li><b>En este panel de Vista Previa:</b> El visor corre dentro de un marco seguro (<i>iframe</i>) que a veces restringe el GPS de alta precisión. Si descargás el archivo <b>.HTML</b> y lo abrís en el celular (con ubicación activada), usa el chip GPS satelital real con <b>±5 a 15 metros</b> de exactitud.</li>
+            <li><b>En una PC de escritorio (Windows):</b> Muchas PCs no tienen receptor GPS. El navegador puede usar distintas fuentes de ubicación, según el equipo y el sistema (que suele estar en Capital Federal o a varios kilómetros de Lanús Oeste / Zona Sur, dando un error de 1.000m a 8.000m).</li>
+            <li><b>En este panel de Vista Previa:</b> El visor corre dentro de un marco seguro (<i>iframe</i>) que a veces restringe el GPS de alta precisión. Si descargás el archivo <b>.HTML</b> y lo abrís en el celular (con ubicación activada), usa el chip servicio de ubicación del dispositivo, con precisión variable.</li>
           </ul>
         </div>
 
@@ -605,7 +607,7 @@ function construirHtmlPlanillaOficial(a) {
       <!-- Controles de Sesión, Calibración y Descarga -->
       <div class="flex flex-wrap items-center gap-1.5">
         <span id="wakelock-indicator" class="hidden xl:inline-flex items-center gap-1 text-[10px] font-mono text-emerald-400 bg-slate-950 px-2 py-0.5 rounded border border-slate-800">
-          <i class="fa-solid fa-bolt"></i> 2° Plano 12s
+          <i class="fa-solid fa-bolt"></i> GPS con app activa
         </span>
 
         <button onclick="openGpsCalibrationModal()" class="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 font-extrabold text-[11px] border border-amber-500/40 flex items-center gap-1 transition" title="Calibrar ubicación real o diagnosticar señal GPS">
@@ -698,6 +700,19 @@ function construirHtmlPlanillaOficial(a) {
   <!-- CONTENIDO PRINCIPAL -->
   <main class="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 py-5">
 
+
+    <aside class="no-print bg-amber-50 border border-amber-300 rounded-xl p-3 mb-4 text-xs space-y-2">
+      <strong>LINCE · Revisión 1 · Guardado y borradores</strong>
+      <p id="lince-runtime-mode"></p>
+      <p>GPS con la aplicación activa. No se garantiza seguimiento con pantalla bloqueada. Nube: los envíos del servidor actual no tienen confirmación verificable.</p>
+      <div class="flex flex-wrap gap-2">
+        <button type="button" onclick="descargarRespaldoLince()" class="bg-slate-900 text-white rounded-lg px-3 py-2">Descargar respaldo completo</button>
+        <label class="bg-slate-900 text-white rounded-lg px-3 py-2 cursor-pointer">Importar registros de respaldo<input type="file" accept=".json,application/json" class="hidden" onchange="importarRespaldoLince(event)"></label>
+        <button type="button" onclick="window.print()" class="bg-slate-900 text-white rounded-lg px-3 py-2">Imprimir hoja</button>
+        <button type="button" id="lince-exit-history" hidden onclick="salirVistaHistoricaLince()" class="bg-slate-900 text-white rounded-lg px-3 py-2">Salir de vista histórica</button>
+      </div>
+      <p id="lince-draft-status" role="status" aria-live="polite">El borrador se guarda mientras completás una hoja.</p>
+    </aside>
     <!-- ===================================================================== -->
     <!-- SOLAPA 1: SERVICIOS Y ARMADO DE RUTA DEL AUDITOR                      -->
     <!-- ===================================================================== -->
@@ -1272,9 +1287,7 @@ function construirHtmlPlanillaOficial(a) {
           </div>
 
           <div class="flex items-center gap-1.5 pt-2 sm:pt-4">
-            <button type="button" onclick="markAllAuditItems('B')" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-emerald-400 text-xs font-bold border border-slate-700 transition" title="Marcar todos como Bueno rápidamente">
-              <i class="fa-solid fa-check-double mr-1"></i> Todo "B"
-            </button>
+            
           </div>
         </div>
 
@@ -1596,57 +1609,19 @@ function construirHtmlPlanillaOficial(a) {
       return {
         lat: Number(pos.coords.latitude.toFixed(6)),
         lng: Number(pos.coords.longitude.toFixed(6)),
-        precision: Math.round(pos.coords.accuracy || 0),
-        fuente: fuenteManual || (pos.coords.accuracy <= 60 ? "GPS_SATELITAL" : pos.coords.accuracy <= 350 ? "WIFI_ANTENA" : "IP_PROVEEDOR_PC"),
-        hora: new Date().toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
-        fechaHora: new Date().toLocaleString("es-AR")
+        precision: Number.isFinite(pos.coords.accuracy) ? Math.round(pos.coords.accuracy) : null,
+        timestampMs: Number.isFinite(pos.timestamp) ? pos.timestamp : Date.now(),
+        fuente: fuenteManual || "GEOLOCALIZACION_DISPOSITIVO",
+        hora: new Date(pos.timestamp || Date.now()).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
+        fechaHora: new Date(pos.timestamp || Date.now()).toLocaleString("es-AR")
       };
     }
 
     function obtenerDiagnosticoCalidadGps(punto) {
-      if (!punto) {
-        if (ultimoErrorGps) {
-          return {
-            badgeClass: "bg-red-500/20 text-red-300 border-red-500/40",
-            shortText: "🔴 Permiso GPS Bloqueado / Sin Señal",
-            explanation: `El navegador o el visor bloqueó el acceso al GPS (${ultimoErrorGps}). Usá el botón "🎯 Calibrar GPS" o descargá el archivo .HTML para abrirlo directo en Chrome/Celular.`
-          };
-        }
-        return {
-          badgeClass: "bg-slate-800 text-slate-300 border-slate-700",
-          shortText: "⚪ Buscando GPS Real...",
-          explanation: "Solicitando coordenadas reales con enableHighAccuracy: true y maximumAge: 0..."
-        };
-      }
-
-      if (punto.fuente === "CALIBRADO_MANUAL") {
-        return {
-          badgeClass: "bg-emerald-500/20 text-emerald-300 border-emerald-500/40",
-          shortText: "🎯 Posición Exacta Calibrada",
-          explanation: "Ubicación fijada manualmente por dirección/mapa para evitar el desvío de IP en PC de escritorio."
-        };
-      }
-
-      const acc = Number(punto.precision || 0);
-      if (acc <= 60) {
-        return {
-          badgeClass: "bg-emerald-500/20 text-emerald-300 border-emerald-500/40",
-          shortText: `🟢 GPS Satelital Exacto (±${acc}m)`,
-          explanation: `Excelente señal de hardware GPS satelital con margen de ±${acc} metros.`
-        };
-      } else if (acc <= 350) {
-        return {
-          badgeClass: "bg-amber-500/20 text-amber-300 border-amber-500/40",
-          shortText: `🟡 Señal Wi-Fi / Antena (±${acc}m)`,
-          explanation: `Ubicación obtenida por triangulación Wi-Fi o antena celular (±${acc} metros).`
-        };
-      } else {
-        return {
-          badgeClass: "bg-orange-500/20 text-orange-300 border-orange-500/50",
-          shortText: `🟠 Ubicación IP de PC (±${acc}m - Desvío de Proveedor)`,
-          explanation: `¡Atención! Tu dispositivo informó ±${acc} metros de error porque estás en una PC sin chip GPS físico (el navegador está devolviendo la central IP de tu proveedor de internet, que suele estar en otra localidad). Tocá "🎯 Calibrar GPS" para fijar tu dirección exacta.`
-        };
-      }
+      const base = 'bg-amber-500/20 text-amber-300 border-amber-500/40';
+      if (!punto) return {badgeClass:base,shortText:'Sin ubicación verificada',explanation:ultimoErrorGps || 'Esperando permiso y lectura del dispositivo.'};
+      if (punto.fuente === 'CALIBRADO_MANUAL') return {badgeClass:base,shortText:'Referencia manual, no verificada',explanation:'El punto elegido en el mapa no demuestra presencia física.'};
+      return {badgeClass:base,shortText:'Ubicación del dispositivo (±' + (punto.precision ?? '?') + ' m)',explanation:'Precisión informada por el navegador. No identifica el sensor ni garantiza presencia continua.'};
     }
 
     // --- 1. LLAMAR A ESTA FUNCIÓN APENAS EL AUDITOR INICIA SESIÓN (SOLO SEGUIMIENTO EN VIVO) ---
@@ -1739,23 +1714,15 @@ function construirHtmlPlanillaOficial(a) {
       if (guardado) {
         try {
           gpsInicioAuditoria = JSON.parse(guardado);
+          if (gpsInicioAuditoria && gpsInicioAuditoria.fuente === "CALIBRADO_MANUAL") {gpsInicioAuditoria = null; return;}
           actualizarPanelGpsHojaUI();
           return;
         } catch (e) {}
       }
 
       // Si el usuario fijó su posición calibrada manualmente desde la PC, usa esa posición exacta
-      if (calibracionManualActiva && gpsVivoAuditor) {
-        const puntoCalibrado = {
-          ...gpsVivoAuditor,
-          hora: new Date().toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
-          fechaHora: new Date().toLocaleString("es-AR")
-        };
-        gpsInicioAuditoria = puntoCalibrado;
-        localStorage.setItem("gpsInicioAuditoriaActual", JSON.stringify(puntoCalibrado));
-        actualizarPanelGpsHojaUI();
-        enviarGpsANube(puntoCalibrado, "🟢 INICIÓ HOJA DE AUDITORÍA", true);
-        showToast(`📍 GPS de Inicio sellado en tu posición calibrada (${puntoCalibrado.lat}, ${puntoCalibrado.lng}).`, "info");
+      if (calibracionManualActiva) {
+        showToast('Desactivá la referencia manual y solicitá ubicación del dispositivo. No se sellará un punto manual.', 'warning');
         return;
       }
 
@@ -1779,7 +1746,7 @@ function construirHtmlPlanillaOficial(a) {
             if (punto.precision > 350) {
               showToast(`⚠️ Tu PC reportó ubicación por IP (±${punto.precision}m de margen). Si no coincide con tu cuadra, tocá "🎯 Calibrar GPS".`, "warning");
             } else {
-              showToast(`📍 GPS Real de Inicio sellado: ${punto.lat}, ${punto.lng} (±${punto.precision}m).`, "info");
+              showToast(`📍 Ubicación de inicio registrada: ${punto.lat}, ${punto.lng} (±${punto.precision}m).`, "info");
             }
           },
           err => {
@@ -1795,17 +1762,8 @@ function construirHtmlPlanillaOficial(a) {
 
     // Botón manual para actualizar el punto exacto de llegada en la puerta del objetivo
     function sellarGpsInicioManual() {
-      if (calibracionManualActiva && gpsVivoAuditor) {
-        const punto = {
-          ...gpsVivoAuditor,
-          hora: new Date().toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
-          fechaHora: new Date().toLocaleString("es-AR")
-        };
-        gpsInicioAuditoria = punto;
-        localStorage.setItem("gpsInicioAuditoriaActual", JSON.stringify(punto));
-        actualizarPanelGpsHojaUI();
-        enviarGpsANube(punto, "🟢 AUDITANDO OBJETIVO", true);
-        showToast(`📍 Punto de llegada actualizado con tu ubicación calibrada (${punto.lat}, ${punto.lng}).`, "success");
+      if (calibracionManualActiva) {
+        showToast('Desactivá la referencia manual y solicitá ubicación del dispositivo. No se sellará un punto manual.', 'warning');
         return;
       }
 
@@ -1839,48 +1797,14 @@ function construirHtmlPlanillaOficial(a) {
 
     // --- 3. LLAMAR A ESTA FUNCIÓN CUANDO EL AUDITOR GUARDA/FINALIZA LA HOJA DE AUDITORÍA ---
     async function obtenerGpsInicioYFinParaGuardar() {
-      if (!calibracionManualActiva && "geolocation" in navigator) {
-        await new Promise(resolve => {
-          navigator.geolocation.getCurrentPosition(
-            pos => {
-              ultimoErrorGps = null;
-              procesarCoordenadaSeguimientoVivo(pos, "🟢 FINALIZANDO HOJA DE AUDITORÍA", true);
-              resolve();
-            },
-            () => resolve(),
-            { enableHighAccuracy: true, timeout: 6000, maximumAge: 0 }
-          );
-        });
+      let fin = null;
+      if (!calibracionManualActiva && navigator.geolocation) {
+        fin = await new Promise(resolve => navigator.geolocation.getCurrentPosition(
+          pos => { const punto = crearObjetoPunto(pos); gpsVivoAuditor = punto; resolve(punto); },
+          () => resolve(null), {enableHighAccuracy:true, timeout:6000, maximumAge:0}));
       }
-
-      let ultimaConocida = gpsVivoAuditor;
-      if (!ultimaConocida) {
-        try { ultimaConocida = JSON.parse(localStorage.getItem("ultimaCoordenadaAuditor")); } catch (e) {}
-      }
-
-      if (ultimaConocida) {
-        ultimaConocida = {
-          ...ultimaConocida,
-          hora: new Date().toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
-          fechaHora: new Date().toLocaleString("es-AR")
-        };
-      }
-
-      const inicioSellado = gpsInicioAuditoria || ultimaConocida || null;
-
-      const resultado = {
-        gpsInicio: inicioSellado,
-        mapaInicio: formatearLinkMaps(inicioSellado),
-        gpsFin: ultimaConocida || inicioSellado || null,
-        mapaFin: formatearLinkMaps(ultimaConocida || inicioSellado)
-      };
-
-      // Limpia el GPS de inicio y libera el bloqueo para que la próxima Hoja de Auditoría tome un punto nuevo
-      gpsInicioAuditoria = null;
-      localStorage.removeItem("gpsInicioAuditoriaActual");
-      liberarBloqueoHojaEnCurso();
-
-      return resultado;
+      const inicio = gpsInicioAuditoria && gpsInicioAuditoria.fuente !== 'CALIBRADO_MANUAL' ? {...gpsInicioAuditoria} : null;
+      return {gpsInicio:inicio, mapaInicio:formatearLinkMaps(inicio), gpsFin:fin, mapaFin:formatearLinkMaps(fin)};
     }
 
     // --- 4. LLAMAR A ESTA FUNCIÓN CUANDO EL AUDITOR TOCA "CERRAR SESIÓN" ---
@@ -2023,51 +1947,37 @@ function construirHtmlPlanillaOficial(a) {
 
     // Cola de sincronización offline para planillas destinadas a Google Drive
     async function enviarAuditoriaAGoogleDrive(auditoriaObj) {
-      const urlValida = URL_SERVIDOR_AUDITORES && URL_SERVIDOR_AUDITORES.startsWith("https://script.google.com");
-      if (!urlValida) return false;
-
-      if (navigator.onLine) {
-        try {
-          await fetch(URL_SERVIDOR_AUDITORES, {
-            method: "POST",
-            mode: "no-cors",
-            headers: { "Content-Type": "text/plain;charset=utf-8" },
-            body: JSON.stringify({ accion: "guardarAuditoriaFinalizada", auditoria: auditoriaObj })
-          });
-          return true;
-        } catch (e) {
-          encolarAuditoriaOfflineDrive(auditoriaObj);
-          return false;
-        }
-      } else {
-        encolarAuditoriaOfflineDrive(auditoriaObj);
-        return false;
-      }
+      if (!URL_SERVIDOR_AUDITORES || !URL_SERVIDOR_AUDITORES.startsWith('https://script.google.com') || !navigator.onLine) return false;
+      // The legacy server cannot acknowledge cross-origin POSTs. Never claim confirmation.
+      auditoriaObj.estadoNube = 'envio_sin_confirmar';
+      encolarAuditoriaOfflineDrive(auditoriaObj);
+      saveAppState();
+      try {
+        await fetch(URL_SERVIDOR_AUDITORES, {method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({accion:'guardarAuditoriaFinalizada',auditoria:auditoriaObj})});
+      } catch (e) { /* Retain uncertain delivery. Do not automatically duplicate it. */ }
+      return false;
     }
 
     function encolarAuditoriaOfflineDrive(auditoriaObj) {
-      try {
-        const raw = localStorage.getItem("colaAuditoriasDriveLince") || "[]";
-        const lista = JSON.parse(raw);
-        lista.push(auditoriaObj);
-        localStorage.setItem("colaAuditoriasDriveLince", JSON.stringify(lista));
-      } catch (e) {}
+      const lista = JSON.parse(localStorage.getItem('colaAuditoriasDriveLince') || '[]');
+      if (!Array.isArray(lista)) throw new Error('Cola ilegible');
+      const idx = lista.findIndex(a => a.id === auditoriaObj.id);
+      if (idx >= 0) lista[idx] = auditoriaObj; else lista.push(auditoriaObj);
+      localStorage.setItem('colaAuditoriasDriveLince', JSON.stringify(lista));
     }
 
     async function sincronizarColaAuditoriasDrive() {
-      const urlValida = URL_SERVIDOR_AUDITORES && URL_SERVIDOR_AUDITORES.startsWith("https://script.google.com");
-      if (!urlValida || !navigator.onLine) return;
+      if (!navigator.onLine || window.linceSyncBusy) return;
+      window.linceSyncBusy = true;
       try {
-        const raw = localStorage.getItem("colaAuditoriasDriveLince");
-        if (!raw) return;
-        const lista = JSON.parse(raw);
-        if (!Array.isArray(lista) || lista.length === 0) return;
-        localStorage.removeItem("colaAuditoriasDriveLince");
+        const lista = JSON.parse(localStorage.getItem('colaAuditoriasDriveLince') || '[]');
         for (const aud of lista) {
-          await enviarAuditoriaAGoogleDrive(aud);
+          if (aud.estadoNube === 'envio_sin_confirmar') continue;
+          const local = completedAudits.find(a => a.id === aud.id) || aud;
+          await enviarAuditoriaAGoogleDrive(local);
         }
-        showToast(`☁️ ${lista.length} planilla(s) pendiente(s) subida(s) a tu Google Drive.`, "success");
-      } catch (e) {}
+      } catch (e) { showToast('No se pudo procesar la cola. Los registros se conservan.', 'warning'); }
+      finally {window.linceSyncBusy = false;}
     }
 
     // Cálculo de distancia en metros (Fórmula Haversine) para Geocerca Auditor <-> Objetivo
@@ -2115,7 +2025,7 @@ function construirHtmlPlanillaOficial(a) {
       }
       if (diagAcc) {
         diagAcc.textContent = gpsVivoAuditor
-          ? (gpsVivoAuditor.fuente === "CALIBRADO_MANUAL" ? "±1 metro (Fijado por Usuario)" : `±${gpsVivoAuditor.precision} metros`)
+          ? (gpsVivoAuditor.fuente === "CALIBRADO_MANUAL" ? "Sin precisión verificada (manual)" : `±${gpsVivoAuditor.precision} metros`)
           : "---";
       }
       if (diagExp) {
@@ -2145,31 +2055,14 @@ function construirHtmlPlanillaOficial(a) {
     }
 
     function setManualCalibratedCoordinates(lat, lng, labelSource) {
+      if (!Number.isFinite(Number(lat)) || !Number.isFinite(Number(lng)) || Math.abs(Number(lat)) > 90 || Math.abs(Number(lng)) > 180) return;
       calibracionManualActiva = true;
-      ultimoErrorGps = null;
-      const fakePos = {
-        coords: {
-          latitude: Number(lat),
-          longitude: Number(lng),
-          accuracy: 1
-        }
-      };
-      procesarCoordenadaSeguimientoVivo(fakePos, auditoriaEnCursoLince ? "🟢 AUDITANDO OBJETIVO" : "🟢 EN LÍNEA (CALIBRADO)", true, "CALIBRADO_MANUAL");
-      localStorage.setItem("calibracionManualGpsLince", JSON.stringify({ lat: Number(lat), lng: Number(lng), label: labelSource }));
-
-      // Si había una Hoja de Auditoría abierta, actualizar su sello de inicio con la ubicación real calibrada
-      if (document.getElementById("tab-auditoria") && !document.getElementById("tab-auditoria").classList.contains("hidden")) {
-        gpsInicioAuditoria = gpsVivoAuditor;
-        localStorage.setItem("gpsInicioAuditoriaActual", JSON.stringify(gpsVivoAuditor));
-        actualizarPanelGpsHojaUI();
-      }
-
-      if (map) {
-        renderMapMarkers();
-        map.flyTo([Number(lat), Number(lng)], 15);
-      }
-      actualizarModalDiagnosticoGpsUI();
-      showToast(`🎯 Ubicación fijada en ${Number(lat).toFixed(5)}, ${Number(lng).toFixed(5)} (${labelSource}).`, "success");
+      gpsVivoAuditor = {lat:Number(lat),lng:Number(lng),precision:null,fuente:'CALIBRADO_MANUAL',hora:new Date().toLocaleTimeString('es-AR'),fechaHora:new Date().toLocaleString('es-AR')};
+      auditorPosition = {lat:Number(lat),lng:Number(lng)};
+      localStorage.setItem('calibracionManualGpsLince', JSON.stringify({lat:Number(lat),lng:Number(lng),label:labelSource}));
+      if (map) {renderMapMarkers(); map.flyTo([Number(lat),Number(lng)],15);}
+      actualizarBarraEstadoSesionUI(); actualizarModalDiagnosticoGpsUI();
+      showToast('Referencia manual para el mapa. No se acepta como sello de auditoría.', 'warning');
     }
 
     async function calibratePositionByAddress() {
@@ -2296,7 +2189,7 @@ function construirHtmlPlanillaOficial(a) {
 
       if (gpsInicioAuditoria) {
         const origenTxt = gpsInicioAuditoria.fuente === "CALIBRADO_MANUAL"
-          ? "Calibrado Manual Exacto"
+          ? "Referencia manual no verificada"
           : gpsInicioAuditoria.precision > 350
           ? `⚠️ IP Proveedor PC (±${gpsInicioAuditoria.precision}m)`
           : `Precisión ±${gpsInicioAuditoria.precision}m`;
@@ -2528,37 +2421,42 @@ function construirHtmlPlanillaOficial(a) {
     let geoWatchId = null;
 
     function loadAppState() {
-      try {
-        const savedSrv = localStorage.getItem("lince_services_v1");
-        services = savedSrv ? JSON.parse(savedSrv) : [...DEFAULT_SERVICES];
-
-        const savedRoute = localStorage.getItem("lince_shift_route_v1");
-        shiftRoute = savedRoute ? JSON.parse(savedRoute) : ["srv-101", "srv-102", "srv-204"];
-
-        const savedAudits = localStorage.getItem("lince_audits_v1");
-        completedAudits = savedAudits ? JSON.parse(savedAudits) : [];
-
-        const savedMeta = localStorage.getItem("lince_shift_meta_v1");
-        if (savedMeta) {
-          shiftMeta = { ...shiftMeta, ...JSON.parse(savedMeta) };
+      window.linceStorageBlocked = false;
+      function leer(key, fallback, array) {
+        const raw = localStorage.getItem(key);
+        if (raw === null) return fallback;
+        try {
+          const value = JSON.parse(raw);
+          if (array ? !Array.isArray(value) : (!value || typeof value !== 'object' || Array.isArray(value))) throw new Error('Formato inválido');
+          return value;
+        } catch (e) {
+          window.linceStorageBlocked = true;
+          setTimeout(() => showToast('Datos ilegibles: ' + key + '. Se bloqueó el guardado para no sobrescribirlos. Descargá un respaldo.', 'warning'), 300);
+          return fallback;
         }
-      } catch (e) {
-        services = [...DEFAULT_SERVICES];
-        shiftRoute = ["srv-101", "srv-102", "srv-204"];
-        completedAudits = [];
       }
+      services = leer('lince_services_v1', [...DEFAULT_SERVICES], true);
+      shiftRoute = leer('lince_shift_route_v1', ['srv-101','srv-102','srv-204'], true);
+      completedAudits = leer('lince_audits_v1', [], true);
+      shiftMeta = {...shiftMeta, ...leer('lince_shift_meta_v1', {}, false)};
     }
 
     function saveAppState() {
-      try {
-        localStorage.setItem("lince_services_v1", JSON.stringify(services));
-        localStorage.setItem("lince_shift_route_v1", JSON.stringify(shiftRoute));
-        localStorage.setItem("lince_audits_v1", JSON.stringify(completedAudits));
-        localStorage.setItem("lince_shift_meta_v1", JSON.stringify(shiftMeta));
-      } catch (e) {
-        console.error("Error guardando estado:", e);
+      if (window.linceStorageBlocked) {
+        showToast('Guardado bloqueado para proteger datos ilegibles. Exportá un respaldo antes de continuar.', 'warning');
+        return false;
       }
-      updateHeaderBadges();
+      try {
+        localStorage.setItem('lince_audits_v1', JSON.stringify(completedAudits));
+        localStorage.setItem('lince_services_v1', JSON.stringify(services));
+        localStorage.setItem('lince_shift_route_v1', JSON.stringify(shiftRoute));
+        localStorage.setItem('lince_shift_meta_v1', JSON.stringify(shiftMeta));
+        updateHeaderBadges();
+        return true;
+      } catch (e) {
+        showToast('No se pudo guardar en este dispositivo. No cierres la hoja: descargá un respaldo.', 'warning');
+        return false;
+      }
     }
 
     /*************************************************************************
@@ -2881,8 +2779,8 @@ function construirHtmlPlanillaOficial(a) {
     function resetServiceForm() {
       document.getElementById("service-form").reset();
       document.getElementById("srv-id").value = "";
-      document.getElementById("srv-lat").value = (-34.705 + (Math.random() - 0.5) * 0.06).toFixed(4);
-      document.getElementById("srv-lng").value = (-58.390 + (Math.random() - 0.5) * 0.06).toFixed(4);
+      document.getElementById("srv-lat").value = "";
+      document.getElementById("srv-lng").value = "";
       document.getElementById("service-form-title").textContent = "Agregar Nuevo Servicio / Objetivo";
       document.getElementById("btn-save-service-text").textContent = "Guardar Servicio en Padrón";
       document.getElementById("btn-cancel-edit").classList.add("hidden");
@@ -3361,8 +3259,8 @@ function construirHtmlPlanillaOficial(a) {
       map.fitBounds(line.getBounds(), { padding: [50, 50] });
 
       document.getElementById("gps-hud-instruction").textContent = `Dirigirse hacia ${waypoints[1].label}`;
-      document.getElementById("gps-hud-distance").textContent = "4.8 km";
-      document.getElementById("gps-hud-duration").textContent = "12 min";
+      document.getElementById("gps-hud-distance").textContent = "Sin ruta vial";
+      document.getElementById("gps-hud-duration").textContent = "No disponible";
     }
 
     function formatSpanishManeuver(maneuver, street) {
@@ -3972,6 +3870,7 @@ function construirHtmlPlanillaOficial(a) {
     }
 
     async function saveCompletedAudit() {
+      if (window.linceSaving || window.linceHistoryView) return;
       const objetivo = document.getElementById("form-objetivo").value.trim().toUpperCase();
       const asociado = document.getElementById("form-asociado").value.trim().toUpperCase();
       const fecha = document.getElementById("form-fecha").value;
@@ -3985,6 +3884,12 @@ function construirHtmlPlanillaOficial(a) {
         return;
       }
 
+      const faltantes = LINCE_AUDIT_ITEMS.filter(it => !document.querySelector('input[name="rating-' + it.id + '"]:checked'));
+      if (!asociado || !auditor || faltantes.length) {
+        showToast('Completá asociado, auditor y los 20 puntos. Faltan ' + faltantes.length + ' respuestas.', 'warning'); return;
+      }
+      guardarBorradorLince();
+      window.linceSaving = true;
       const btnGuardar = document.getElementById("btn-finalizar-auditoria");
       const textoOriginalBtn = btnGuardar ? btnGuardar.innerHTML : "";
       if (btnGuardar) {
@@ -3992,6 +3897,7 @@ function construirHtmlPlanillaOficial(a) {
         btnGuardar.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span>Sellando GPS de Cierre y Guardando...</span>`;
       }
 
+      try {
       // Captura el GPS de Inicio (sellado al abrir la solapa) y fuerza lectura fresca para el GPS de Fin (al finalizar)
       const sellosGps = await obtenerGpsInicioYFinParaGuardar();
 
@@ -4066,14 +3972,28 @@ function construirHtmlPlanillaOficial(a) {
         mapaFin: sellosGps.mapaFin,
         distanciaObjetivoMetros,
         duracionMinutos,
+        aperturaMs,
+        cierreMs: Date.now(),
+        auditorUsername: auditorActivo ? auditorActivo.username : null,
+        turno: shiftMeta.band,
+        estadoNube: 'pendiente',
+        tipoDuracion: 'TIEMPO_HOJA_NO_PERMANENCIA_VERIFICADA', 
         firmaAsociado,
         firmaControlador,
         fotosEvidencia: [...fotosEvidenciaActuales]
       };
 
       completedAudits.unshift(newAudit);
+      if (!saveAppState()) {
+        completedAudits = completedAudits.filter(a => a.id !== newAudit.id);
+        return;
+      }
+      try {encolarAuditoriaOfflineDrive(newAudit);} catch (e) {showToast('Guardada localmente; no se pudo crear la cola de nube.', 'warning');}
+      gpsInicioAuditoria = null;
+      localStorage.removeItem('gpsInicioAuditoriaActual');
+      liberarBloqueoHojaEnCurso();
+      localStorage.removeItem('lince_borrador_v2');
       activeAuditServiceId = null;
-      saveAppState();
       renderServicesList();
       renderShiftRouteList();
       if (map) renderMapMarkers();
@@ -4087,8 +4007,14 @@ function construirHtmlPlanillaOficial(a) {
       }
 
       resetAuditForm();
-      showToast(`✅ Auditoría finalizada y enviada a Google Drive (GPS Inicio + GPS Fin sellados).`, "success");
+      showToast("Guardada en este dispositivo. Nube: pendiente de confirmación; revisá Drive antes de darla por recibida.", "info");
       switchTab("historial");
+      } catch (e) {
+        showToast('No se completó el cierre. Conservá la hoja y descargá un respaldo. ' + e.message, 'warning');
+      } finally {
+        window.linceSaving = false;
+        if (btnGuardar) {btnGuardar.disabled = false; btnGuardar.innerHTML = textoOriginalBtn;}
+      }
     }
 
     /*************************************************************************
@@ -4211,17 +4137,17 @@ function construirHtmlPlanillaOficial(a) {
 
         const geofenceBadge =
           a.distanciaObjetivoMetros !== null && a.distanciaObjetivoMetros !== undefined
-            ? a.distanciaObjetivoMetros <= 200
-              ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300"><i class="fa-solid fa-location-check"></i> En Puesto (${a.distanciaObjetivoMetros}m)</span>`
+            ? a.distanciaObjetivoMetros <= 200 && a.gpsInicio && a.gpsInicio.fuente !== "CALIBRADO_MANUAL" && Number.isFinite(a.gpsInicio.precision) && a.gpsInicio.precision <= 100
+              ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300"><i class="fa-solid fa-location-check"></i> Lectura cercana (${a.distanciaObjetivoMetros}m)</span>`
               : `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300"><i class="fa-solid fa-triangle-exclamation"></i> A ${a.distanciaObjetivoMetros}m del objetivo</span>`
             : "";
 
         return `
           <tr class="hover:bg-slate-50 transition">
             <td class="py-3 px-3 font-mono font-semibold text-slate-700">
-              <div>${a.fecha} <span class="text-slate-400">${a.hora}</span></div>
+              <div>${a.fecha} <span class="text-slate-400">${a.hora}</span></div><div class="text-xs font-bold">Nube: ${a.estadoNube === "envio_sin_confirmar" ? "envío sin confirmar" : a.estadoNube === "pendiente" ? "pendiente" : "sin estado verificable"}</div>
               <div class="text-[10px] text-slate-500 mt-0.5">
-                <i class="fa-solid fa-stopwatch mr-0.5"></i>Permanencia: ${a.duracionMinutos || 1} min
+                <i class="fa-solid fa-stopwatch mr-0.5"></i>Tiempo de hoja: ${a.duracionMinutos || 1} min
               </div>
             </td>
             <td class="py-3 px-3">
@@ -4265,7 +4191,7 @@ function construirHtmlPlanillaOficial(a) {
       const texto = [
         `*🛡️ AUDITORÍA LINCE SEGURIDAD*`,
         `*Objetivo:* ${a.objetivo}`,
-        `*Fecha y Hora:* ${a.fecha} ${a.hora} (Permanencia: ${a.duracionMinutos || 1} min)`,
+        `*Fecha y Hora:* ${a.fecha} ${a.hora} (Tiempo de hoja: ${a.duracionMinutos || 1} min)`,
         `*Asociado:* ${a.asociado}`,
         `*Coord. Zona:* ${a.coord || "-"}`,
         `*Auditor:* ${a.auditor}`,
@@ -4503,6 +4429,125 @@ function construirHtmlPlanillaOficial(a) {
         resizeSignatureCanvases();
         if (map) map.invalidateSize();
       });
+    });
+
+    const LINCE_BACKUP_KEYS = ['lince_services_v1','lince_shift_route_v1','lince_audits_v1','lince_shift_meta_v1','auditoriaEnCursoLince_v1','gpsInicioAuditoriaActual','lince_borrador_v2','colaAuditoriasDriveLince','lince_gas_url_v1'];
+    function descargarRespaldoLince() {
+      const datos = {};
+      LINCE_BACKUP_KEYS.forEach(k => {datos[k] = localStorage.getItem(k);});
+      const blob = new Blob([JSON.stringify({sistema:'LINCE',version:2,fecha:new Date().toISOString(),datos},null,2)],{type:'application/json'});
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'Respaldo_LINCE_' + Date.now() + '.json'; a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href),3000);
+    }
+    async function importarRespaldoLince(event) {
+      const file = event.target.files[0]; if (!file) return;
+      try {
+        if (file.size > 50000000) throw new Error('Respaldo demasiado grande');
+        const data = JSON.parse(await file.text());
+        if (data.sistema !== 'LINCE' || !data.datos) throw new Error('No es un respaldo LINCE');
+        const merge = (key, actual) => {
+          if (data.datos[key] == null) return actual;
+          const list = JSON.parse(data.datos[key]);
+          if (!Array.isArray(list) || list.some(x => !x || typeof x.id !== 'string')) throw new Error('Lista inválida');
+          const map = new Map(list.map(x => [x.id,x])); actual.forEach(x => map.set(x.id,x)); return [...map.values()];
+        };
+        const audits = merge('lince_audits_v1', completedAudits), catalog = merge('lince_services_v1',services);
+        askConfirmation('Importar respaldo','Se agregarán registros por ID, sin reemplazar los actuales. Se descargará antes una copia de seguridad.',() => {
+          descargarRespaldoLince();
+          const oldA = completedAudits, oldS = services;
+          completedAudits = audits; services = catalog;
+          if (!saveAppState()) {completedAudits = oldA; services = oldS; return;}
+          renderServicesList(); renderShiftRouteList(); renderAuditsHistory();
+          showToast('Registros importados. No se cambiaron sesión, servidor ni borrador actual.');
+        });
+      } catch(e) {showToast('No se importó: ' + e.message,'warning');}
+      event.target.value = '';
+    }
+    function guardarBorradorLince() {
+      if (!auditoriaEnCursoLince || window.linceHistoryView || window.linceSaving) return;
+      try {
+        const campos = {};
+        document.querySelectorAll('#official-paper-sheet input, #official-paper-sheet textarea').forEach(el => {
+          const key = el.id || el.name + ':' + el.value;
+          campos[key] = ['checkbox','radio'].includes(el.type) ? el.checked : el.value;
+        });
+        const firmas = {};
+        Object.values(signaturePads).forEach(({canvas}) => {if(canvas.width > 0) firmas[canvas.id] = canvas.toDataURL();});
+        localStorage.setItem('lince_borrador_v2',JSON.stringify({campos,firmas,fotos:fotosEvidenciaActuales,lock:auditoriaEnCursoLince,gps:gpsInicioAuditoria,serviceId:activeAuditServiceId,fecha:Date.now()}));
+        const el = document.getElementById('lince-draft-status'); if(el) el.textContent = 'Borrador guardado ' + new Date().toLocaleTimeString('es-AR');
+      } catch(e) {showToast('No se pudo guardar el borrador. Descargá un respaldo y no cierres esta pantalla.','warning');}
+    }
+    function restaurarBorradorLince() {
+      try {
+        const raw = localStorage.getItem('lince_borrador_v2'); if(!raw) return;
+        const d = JSON.parse(raw); if(!d.lock || !d.campos) return;
+        auditoriaEnCursoLince = d.lock; activeAuditServiceId = d.serviceId; gpsInicioAuditoria = d.gps;
+        document.querySelectorAll('#official-paper-sheet input, #official-paper-sheet textarea').forEach(el => {
+          const key = el.id || el.name + ':' + el.value;
+          if (!(key in d.campos)) return;
+          if(['checkbox','radio'].includes(el.type)) el.checked = !!d.campos[key]; else el.value = d.campos[key];
+        });
+        fotosEvidenciaActuales = d.fotos || [null,null]; renderizarPreviewFotosEvidencia();
+        Object.entries(d.firmas || {}).forEach(([id,src]) => restaurarFirmaLince(id,src));
+        actualizarPanelGpsHojaUI(); actualizarBarraEstadoSesionUI();
+        showToast('Borrador recuperado. Volvé a Hoja de Auditoría para continuar.','info');
+      } catch(e) {showToast('Borrador ilegible: se conserva sin borrar. Descargá un respaldo.','warning');}
+    }
+    function restaurarFirmaLince(id,src) {
+      if(!src || !src.startsWith('data:image/')) return;
+      const canvas = document.getElementById(id); if(!canvas) return;
+      const img = new Image(); img.onload = () => {canvas.getContext('2d').clearRect(0,0,canvas.width,canvas.height); canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);}; img.src = src;
+    }
+    const linceResizeOriginal = resizeSignatureCanvases;
+    resizeSignatureCanvases = function() {
+      const copias = Object.values(signaturePads).map(({canvas}) => [canvas.id,canvas.width > 0 ? canvas.toDataURL() : null]);
+      linceResizeOriginal(); copias.forEach(([id,src]) => restaurarFirmaLince(id,src));
+    };
+    const linceViewOriginal = viewSavedAudit;
+    viewSavedAudit = function(id) {
+      if(auditoriaEnCursoLince && auditoriaEnCursoLince.activa) {showToast('Finalizá la hoja en curso antes de abrir el historial.','warning');return;}
+      linceViewOriginal(id); window.linceHistoryView = true;
+      document.querySelectorAll('#tab-auditoria input,#tab-auditoria textarea,#tab-auditoria select,#tab-auditoria button').forEach(el => {el.disabled = true;});
+      const a = completedAudits.find(x => x.id === id);
+      if(a) {restaurarFirmaLince('sig-asociado',a.firmaAsociado);restaurarFirmaLince('sig-controlador',a.firmaControlador);}
+      document.getElementById('lince-exit-history').hidden = false;
+    };
+    function salirVistaHistoricaLince() {
+      window.linceHistoryView = false;
+      document.querySelectorAll('#tab-auditoria input,#tab-auditoria textarea,#tab-auditoria select,#tab-auditoria button').forEach(el => {el.disabled = false;});
+      document.getElementById('lince-exit-history').hidden = true;
+      activeAuditServiceId = null; resetAuditForm(); switchTab('historial');
+    }
+    const linceSwitchOriginal = switchTab;
+    switchTab = function(tab) {
+      if(window.linceHistoryView) salirVistaHistoricaLince();
+      linceSwitchOriginal(tab);
+    };
+    const linceLoadSheetOriginal = loadServiceIntoAuditSheet;
+    loadServiceIntoAuditSheet = function(id,skip) {
+      if(auditoriaEnCursoLince && activeAuditServiceId === id && document.getElementById('form-objetivo').value) return;
+      linceLoadSheetOriginal(id,skip);
+    };
+    const linceCancelOriginal = cancelarHojaEnCursoConConfirmacion;
+    cancelarHojaEnCursoConConfirmacion = function() {
+      guardarBorradorLince(); linceCancelOriginal();
+    };
+    const linceReleaseOriginal = liberarBloqueoHojaEnCurso;
+    liberarBloqueoHojaEnCurso = function() {linceReleaseOriginal();localStorage.removeItem('lince_borrador_v2');};
+    const linceSendGpsOriginal = enviarGpsANube;
+    enviarGpsANube = async function(punto,estado,forzar) {
+      if(!punto || punto.fuente === 'CALIBRADO_MANUAL') return;
+      return linceSendGpsOriginal(punto,estado,forzar);
+    };
+    window.addEventListener('DOMContentLoaded', () => {
+      restaurarBorradorLince();
+      document.getElementById('official-paper-sheet').addEventListener('input',guardarBorradorLince);
+      document.getElementById('official-paper-sheet').addEventListener('change',guardarBorradorLince);
+      window.addEventListener('pointerup',guardarBorradorLince);
+      document.addEventListener('visibilitychange',() => {if(document.hidden) guardarBorradorLince();});
+      window.addEventListener('pagehide',guardarBorradorLince);
+      setInterval(guardarBorradorLince,5000);
+      document.getElementById('lince-runtime-mode').textContent = location.protocol === 'file:' ? 'Archivo local: datos separados del sitio web. No es una app instalada.' : 'Versión web: mantené el mismo enlace para conservar el almacenamiento local.';
     });
   </script>
 </body>
